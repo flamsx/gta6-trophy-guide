@@ -3,23 +3,55 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GTA VI trophy checklist</title>
-<link rel="stylesheet" href="style.css">
+<title>Leonida 55 — GTA VI Trophy Guide &amp; Tracker</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23ff2e88'/%3E%3Ctext x='32' y='42' font-size='28' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'%3E55%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<header>
-  <h1>GTA VI trophy checklist</h1>
-  <p id="progress">0 of 55 earned</p>
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">55</div>
+    <div>
+      <h1>Leonida 55</h1>
+      <p class="tagline">GTA VI trophy guide &amp; tracker — offline, open, in our own words</p>
+    </div>
+  </div>
+  <div class="top-controls">
+    <label class="switch" title="Hide story trophies until earned">
+      <input type="checkbox" id="spoilerToggle">
+      <span>Spoilers off</span>
+    </label>
+    <button id="themeToggle" type="button" title="Switch theme">Light</button>
+  </div>
 </header>
-<div class="controls">
-  <label>Grade <select id="grade"><option value="all">All</option><option value="platinum">Platinum</option><option value="gold">Gold</option><option value="silver">Silver</option><option value="bronze">Bronze</option></select></label>
-  <button id="export" type="button">Export progress</button>
-  <label class="import">Import progress <input id="import" type="file" accept="application/json"></label>
-</div>
-<table>
-  <thead><tr><th>Earned</th><th>Trophy</th><th>Grade</th><th>How to get it</th></tr></thead>
-  <tbody id="rows"></tbody>
-</table>
-<script type="module" src="app.js"></script>
+
+<section class="audit" aria-label="List audit">
+  <strong>55/55 official names verified</strong>
+  <span>vs Exophase (2026-11-18) + PSNProfiles</span>
+  <span class="dot-sep">·</span><span>1 Platinum · 2 Gold · 6 Silver · 46 Bronze · 28 hidden</span>
+  <span class="dot-sep">·</span><span>Guides in our own words — anything not yet checked in the game says so</span>
+</section>
+
+<section class="progress-wrap" aria-label="Progress">
+  <div class="progress-text"><span id="progressCount">0 of 55 earned</span><span id="progressPoints">0 pts</span></div>
+  <div class="progress-bar"><div id="progressFill" style="width:0%"></div></div>
+</section>
+
+<nav class="tabs" aria-label="Views">
+  <a href="#/checklist" data-view="checklist">Checklist</a>
+  <a href="#/roadmap" data-view="roadmap">Roadmap</a>
+  <a href="#/missables" data-view="missables">Missables <span class="pill" id="missablePill">1 watch</span></a>
+  <a href="#/planner" data-view="planner">Next up</a>
+  <a href="#/settings" data-view="settings">Save &amp; settings</a>
+</nav>
+
+<main id="main" class="main"></main>
+
+<footer class="foot">
+  <p><strong>Sources.</strong> Official list: Exophase (exophase.com/game/grand-theft-auto-vi-psn/trophies/) and PSNProfiles (psnprofiles.com/trophies/43531-grand-theft-auto-vi), frozen 2026-11-18. Hidden flags cross-checked with planetgta6.com and outputlag.com. Methods that name another guide cite it; every guide is written in our own words from the official descriptions, and anything not yet checked in the game says so. No Rockstar logo or artwork is used anywhere in this guide.</p>
+  <p>Leonida 55 is an unofficial fan-made tracker. Grand Theft Auto and GTA are trademarks of Take-Two Interactive; this guide is not affiliated with or endorsed by Rockstar Games.</p>
+</footer>
+
+<script type="module" src="js/app.js"></script>
 </body>
 </html>

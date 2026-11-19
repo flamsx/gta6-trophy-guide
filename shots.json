@@ -1,5 +1,1 @@
-[
-  { "file": "1-checklist.jpg", "path": "/", "viewport": { "width": 1280, "height": 800 } },
-  { "file": "2-silver.jpg", "path": "/", "grade": "silver", "viewport": { "width": 1280, "height": 800 } },
-  { "file": "3-bronze.jpg", "path": "/", "grade": "bronze", "scroll": 1400, "viewport": { "width": 1280, "height": 800 } }
-]
+[{"file":"1-checklist.jpg","note":"Checklist + guide pane open on Positive Mental Attitude (missable watch, full guide + sources), filters + spoiler toggle visible, 13/55 earned seeded","path":"/#/checklist/28","spoiler":false,"viewport":{"height":800,"width":1280}},{"file":"2-roadmap.jpg","note":"Platinum roadmap, seven stages with progress","path":"/#/roadmap","spoiler":false,"viewport":{"height":800,"width":1280}},{"file":"3-missables.jpg","note":"Missable watch list + save rules","path":"/#/missables","spoiler":false,"viewport":{"height":800,"width":1280}},{"file":"4-planner.jpg","note":"Next up planner with spoilers on (hidden trophies masked)","path":"/#/planner","spoiler":true,"viewport":{"height":800,"width":1280}}]
