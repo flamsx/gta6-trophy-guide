@@ -1,57 +1,50 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="night">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Leonida 55 — GTA VI Trophy Guide &amp; Tracker</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23ff2e88'/%3E%3Ctext x='32' y='42' font-size='28' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'%3E55%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23ff6b4a'/%3E%3Ctext x='16' y='22' font-size='16' font-family='Georgia' font-weight='bold' text-anchor='middle' fill='%23fff'%3E55%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<header class="topbar">
-  <div class="brand">
-    <div class="brand-mark">55</div>
-    <div>
-      <h1>Leonida 55</h1>
-      <p class="tagline">GTA VI trophy guide &amp; tracker — offline, open, in our own words</p>
-    </div>
+<header class="top">
+  <div class="titleblock">
+    <h1>Leonida 55</h1>
+    <p class="subtitle">GTA VI Trophy Guide &amp; Tracker — Grand Theft Auto VI, PlayStation 5</p>
+    <p class="audit" id="audit">55/55 official names verified vs Exophase (2026-11-18) + PSNProfiles · 28 hidden · 22 PSN counters · every guide cites its sources</p>
   </div>
-  <div class="top-controls">
-    <label class="switch" title="Hide story trophies until earned">
-      <input type="checkbox" id="spoilerToggle">
-      <span>Spoilers off</span>
-    </label>
-    <button id="themeToggle" type="button" title="Switch theme">Light</button>
+  <div class="progressblock">
+    <div class="bigcount"><span id="earnedCount">0</span><span class="of">/ 55 earned</span></div>
+    <div class="bar"><div class="fill" id="progressFill" style="width:0%"></div></div>
+    <p class="progressline" id="progressLine">0 of 55 earned · 0% to the platinum</p>
   </div>
 </header>
-
-<section class="audit" aria-label="List audit">
-  <strong>55/55 official names verified</strong>
-  <span>vs Exophase (2026-11-18) + PSNProfiles</span>
-  <span class="dot-sep">·</span><span>1 Platinum · 2 Gold · 6 Silver · 46 Bronze · 28 hidden</span>
-  <span class="dot-sep">·</span><span>Guides in our own words — anything not yet checked in the game says so</span>
-</section>
-
-<section class="progress-wrap" aria-label="Progress">
-  <div class="progress-text"><span id="progressCount">0 of 55 earned</span><span id="progressPoints">0 pts</span></div>
-  <div class="progress-bar"><div id="progressFill" style="width:0%"></div></div>
-</section>
-
-<nav class="tabs" aria-label="Views">
-  <a href="#/checklist" data-view="checklist">Checklist</a>
+<div class="controls" id="controls">
+  <label class="search">Search <input id="search" type="search" placeholder="Trophy, mission, keyword…" autocomplete="off"></label>
+  <label>Grade <select id="gradeFilter"><option value="all">All grades</option><option value="platinum">Platinum</option><option value="gold">Gold</option><option value="silver">Silver</option><option value="bronze">Bronze</option></select></label>
+  <label>Kind <select id="kindFilter"><option value="all">All kinds</option><option value="story">Story</option><option value="missable">Missable watch</option><option value="collectibles">Collectibles</option><option value="activities">Activities</option></select></label>
+  <label>Show <select id="earnedFilter"><option value="all">All trophies</option><option value="earned">Earned only</option><option value="unearned">Unearned only</option></select></label>
+  <label class="check"><input id="spoilerToggle" type="checkbox" checked> Spoiler guard (hide unrevealed story trophies)</label>
+  <label class="check"><input id="hiddenToggle" type="checkbox"> Hide hidden trophy names</label>
+  <button id="themeToggle" type="button">Paper theme</button>
+  <button id="exportBtn" type="button">Export progress</button>
+  <label class="import">Import progress <input id="importFile" type="file" accept="application/json"></label>
+</div>
+<nav class="tabs" id="tabs">
+  <a href="#/tracker" data-view="tracker">Tracker</a>
   <a href="#/roadmap" data-view="roadmap">Roadmap</a>
-  <a href="#/missables" data-view="missables">Missables <span class="pill" id="missablePill">1 watch</span></a>
+  <a href="#/missables" data-view="missables">Missables</a>
   <a href="#/planner" data-view="planner">Next up</a>
-  <a href="#/settings" data-view="settings">Save &amp; settings</a>
 </nav>
-
-<main id="main" class="main"></main>
-
+<div class="layout">
+  <main id="view" class="view"></main>
+  <aside id="guidePane" class="guidepane" aria-label="Trophy guide"></aside>
+</div>
 <footer class="foot">
-  <p><strong>Sources.</strong> Official list: Exophase (exophase.com/game/grand-theft-auto-vi-psn/trophies/) and PSNProfiles (psnprofiles.com/trophies/43531-grand-theft-auto-vi), frozen 2026-11-18. Hidden flags cross-checked with planetgta6.com and outputlag.com. Methods that name another guide cite it; every guide is written in our own words from the official descriptions, and anything not yet checked in the game says so. No Rockstar logo or artwork is used anywhere in this guide.</p>
-  <p>Leonida 55 is an unofficial fan-made tracker. Grand Theft Auto and GTA are trademarks of Take-Two Interactive; this guide is not affiliated with or endorsed by Rockstar Games.</p>
+  <p>Sources: the official list on Exophase for names, descriptions and grades; PSNProfiles for PSN's counts where a trophy has one; planetgta6.com and outputlag.com for the 28 hidden trophies. Guides are our own advice from the official descriptions, not yet checked in the game. No Rockstar Games logo or artwork is used. Works fully offline — no network requests.</p>
+  <p>Data: app/data/trophies.json · Progress saves in this browser (localStorage) · Export / import anytime.</p>
 </footer>
-
 <script type="module" src="js/app.js"></script>
 </body>
 </html>

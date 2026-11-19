@@ -1,122 +1,139 @@
-// Leonida 55 — boot, saved state, hash routing, render loop.
-// The app is static and offline: it fetches data/trophies.json from its own files and nothing else.
+// Leonida 55 — boot, hash routing, controls and URL parameters for screenshots / tests.
+// URL parameters (all optional): ?view=tracker|roadmap|missables|planner, ?trophy=<id>,
+// ?seed=<id,id,…> (mark earned), ?counters=<id:value,…>, ?spoiler=on|off, ?theme=night|paper.
+import { loadTrophies, trophyById } from './data.js';
+import { store } from './store.js';
+import { filters } from './filters.js';
+import { renderTracker, renderRoadmap, renderMissables, renderPlanner, renderGuidePane } from './views.js';
 
-import { loadProgress, saveProgress, exportProgress, importProgressFile, resetProgress } from './store.js';
-import { createFilterState } from './filters.js';
-import { totalPoints } from './data.js';
-import { renderChecklist, refreshTrophyList, renderRoadmap, renderMissables, renderPlanner, renderSettings } from './views.js';
+const viewEl = document.getElementById('view');
+const paneEl = document.getElementById('guidePane');
+const tabsEl = document.getElementById('tabs');
 
-const main = document.getElementById('main');
-const doc = await (await fetch('data/trophies.json')).json();
-const trophies = doc.trophies;
-
-const saved = loadProgress();
-const state = {
-  earned: new Set(saved.earned),
-  counters: saved.counters,
-  spoiler: saved.spoiler,
-  theme: saved.theme,
-};
-const filters = createFilterState();
+let trophies = [];
 let selectedId = null;
-let view = 'checklist';
+let currentView = 'tracker';
 
-function persist() {
-  saveProgress(state);
-}
-
-function updateChrome() {
-  document.documentElement.dataset.theme = state.theme;
-  document.getElementById('themeToggle').textContent = state.theme === 'paper' ? 'Dark' : 'Light';
-  document.getElementById('spoilerToggle').checked = state.spoiler;
-  document.getElementById('progressCount').textContent = `${state.earned.size} of ${trophies.length} earned`;
-  document.getElementById('progressPoints').textContent = `${totalPoints(trophies, state.earned)} pts`;
-  document.getElementById('progressFill').style.width = `${Math.round((state.earned.size / trophies.length) * 100)}%`;
-  for (const a of document.querySelectorAll('.tabs a')) {
-    a.classList.toggle('active', a.dataset.view === view);
+function applyUrlParams() {
+  const q = new URLSearchParams(location.search);
+  if (q.get('theme') === 'paper' || q.get('theme') === 'night') {
+    store.state.theme = q.get('theme');
+    store.save();
   }
+  if (q.get('spoiler') === 'on') { store.state.spoiler = true; store.save(); }
+  if (q.get('spoiler') === 'off') { store.state.spoiler = false; store.save(); }
+  if (q.get('seed')) {
+    for (const raw of q.get('seed').split(',')) {
+      const id = parseInt(raw, 10);
+      if (id) store.setEarned(id, true);
+    }
+  }
+  if (q.get('counters')) {
+    for (const pair of q.get('counters').split(',')) {
+      const [idRaw, valRaw] = pair.split(':');
+      const id = parseInt(idRaw, 10);
+      const val = parseInt(valRaw, 10);
+      if (id && !Number.isNaN(val)) store.setCounter(id, val);
+    }
+  }
+  if (q.get('trophy')) {
+    const id = parseInt(q.get('trophy'), 10);
+    if (id) selectedId = id;
+  }
+  if (q.get('view')) currentView = q.get('view');
 }
 
-function parseHash() {
-  const parts = location.hash.replace(/^#\/?/, '').split('/');
-  view = ['checklist', 'roadmap', 'missables', 'planner', 'settings'].includes(parts[0]) ? parts[0] : 'checklist';
-  selectedId = parts[1] ? Number(parts[1]) : null;
-  if (selectedId && !trophies.some((t) => t.id === selectedId)) selectedId = null;
+function viewFromHash() {
+  const m = location.hash.match(/^#\/(tracker|roadmap|missables|planner)$/);
+  if (m) currentView = m[1];
+  if (!location.hash) currentView = currentView || 'tracker';
 }
 
-function render() {
-  parseHash();
-  updateChrome();
-  main.replaceChildren();
-  const ctx = {
-    trophies, state, filters, selectedId,
-    select(id) {
-      selectedId = id;
-      location.hash = id ? `#/checklist/${id}` : '#/checklist';
-      if (!id) render();
-    },
-    toggleEarned(name) {
-      if (state.earned.has(name)) state.earned.delete(name);
-      else state.earned.add(name);
-      persist();
-      render();
-    },
-    setCounter(id, value) {
-      const trophy = trophies.find((t) => t.id === id);
-      if (!trophy || trophy.target == null) return;
-      state.counters[id] = Math.max(0, Math.min(Math.round(Number(value) || 0), trophy.target));
-      persist();
-      render();
-    },
-    rerender() { render(); },
-    refreshList() { refreshTrophyList(main, ctx); },
-    exportProgress() { exportProgress(state); },
-    async importProgress(file) {
-      try {
-        const data = await importProgressFile(file, trophies);
-        state.earned = new Set(data.earned);
-        state.counters = data.counters;
-        persist();
-        render();
-      } catch (err) {
-        window.alert('That file could not be imported. It must be a Leonida 55 progress export.');
-      }
-    },
-    resetAll() {
-      resetProgress();
-      state.earned = new Set();
-      state.counters = {};
-      persist();
-      render();
-    },
-    setSpoiler(value) {
-      state.spoiler = value;
-      persist();
-      render();
-    },
-    setTheme(theme) {
-      state.theme = theme;
-      persist();
-      updateChrome();
-    },
-  };
-  if (view === 'roadmap') renderRoadmap(main, ctx);
-  else if (view === 'missables') renderMissables(main, ctx);
-  else if (view === 'planner') renderPlanner(main, ctx);
-  else if (view === 'settings') renderSettings(main, ctx);
-  else renderChecklist(main, ctx);
+function renderProgress() {
+  const done = trophies.filter((t) => store.isEarned(t.id)).length;
+  const pct = Math.round((done / trophies.length) * 100);
+  document.getElementById('earnedCount').textContent = String(done);
+  document.getElementById('progressFill').style.width = `${pct}%`;
+  document.getElementById('progressLine').textContent = `${done} of ${trophies.length} earned · ${pct}% to the platinum`;
 }
 
-document.getElementById('spoilerToggle').addEventListener('change', (e) => {
-  state.spoiler = e.target.checked;
-  persist();
-  render();
-});
-document.getElementById('themeToggle').addEventListener('click', () => {
-  state.theme = state.theme === 'paper' ? 'night' : 'paper';
-  persist();
-  updateChrome();
-});
-window.addEventListener('hashchange', render);
+function renderView() {
+  for (const a of tabsEl.querySelectorAll('a')) {
+    a.classList.toggle('active', a.dataset.view === currentView);
+  }
+  const select = (id, keep) => selectTrophy(id, keep);
+  if (currentView === 'roadmap') renderRoadmap(viewEl, trophies, store, select);
+  else if (currentView === 'missables') renderMissables(viewEl, trophies, store, select);
+  else if (currentView === 'planner') renderPlanner(viewEl, trophies, store, select);
+  else renderTracker(viewEl, trophies, store, select);
+  renderProgress();
+  renderGuidePane(paneEl, selectedId ? trophyById(trophies, selectedId) : null, store, rerender);
+}
 
-render();
+function rerender() {
+  renderView();
+}
+
+function selectTrophy(id, keep) {
+  selectedId = id;
+  if (!keep) renderGuidePane(paneEl, trophyById(trophies, id), store, rerender);
+  renderProgress();
+  if (keep) renderView();
+}
+
+window.addEventListener('hashchange', () => { viewFromHash(); renderView(); });
+
+function applyTheme() {
+  const theme = store.state.theme || 'night';
+  document.documentElement.dataset.theme = theme;
+  document.getElementById('themeToggle').textContent = theme === 'night' ? 'Paper theme' : 'Night theme';
+}
+
+function wireControls() {
+  const search = document.getElementById('search');
+  const grade = document.getElementById('gradeFilter');
+  const kind = document.getElementById('kindFilter');
+  const earned = document.getElementById('earnedFilter');
+  const spoiler = document.getElementById('spoilerToggle');
+  const hidden = document.getElementById('hiddenToggle');
+  search.addEventListener('input', () => { filters.search = search.value; renderView(); });
+  grade.addEventListener('change', () => { filters.grade = grade.value; renderView(); });
+  kind.addEventListener('change', () => { filters.kind = kind.value; renderView(); });
+  earned.addEventListener('change', () => { filters.earned = earned.value; renderView(); });
+  spoiler.checked = store.state.spoiler !== false;
+  filters.spoiler = spoiler.checked;
+  spoiler.addEventListener('change', () => {
+    filters.spoiler = spoiler.checked;
+    store.state.spoiler = spoiler.checked;
+    store.save();
+    renderView();
+  });
+  hidden.addEventListener('change', () => { filters.showHidden = !hidden.checked; renderView(); });
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    store.state.theme = store.state.theme === 'night' ? 'paper' : 'night';
+    store.save();
+    applyTheme();
+  });
+  document.getElementById('exportBtn').addEventListener('click', () => store.exportFile());
+  document.getElementById('importFile').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      await store.importFile(file);
+      filters.spoiler = store.state.spoiler !== false;
+      spoiler.checked = filters.spoiler;
+      applyTheme();
+      renderView();
+    } catch {
+      alert('That file is not a Leonida 55 progress export.');
+    }
+  });
+}
+
+trophies = await loadTrophies();
+applyUrlParams();
+filters.spoiler = store.state.spoiler !== false;
+viewFromHash();
+applyTheme();
+wireControls();
+renderView();

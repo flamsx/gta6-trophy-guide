@@ -1,64 +1,65 @@
-// Leonida 55 — saved progress: localStorage, export and import.
-// One key, one shape: { earned: [trophy names], counters: { trophyId: number }, spoiler: bool, theme: 'night'|'paper' }.
+// Progress store: earned ticks, PSN-target counters and per-trophy notes in localStorage,
+// plus export / import of the whole progress file.
+const KEY = 'leonida55-progress-v1';
 
-export const STORE_KEY = 'leonida55-v1';
+function blank() {
+  return { earned: [], counters: {}, notes: {}, spoiler: true, theme: 'night' };
+}
 
-export function loadProgress() {
+function read() {
   try {
-    const raw = localStorage.getItem(STORE_KEY);
-    if (!raw) return { earned: [], counters: {}, spoiler: true, theme: 'night' };
-    const data = JSON.parse(raw);
-    return {
-      earned: Array.isArray(data.earned) ? data.earned : [],
-      counters: data.counters && typeof data.counters === 'object' ? data.counters : {},
-      spoiler: data.spoiler !== false,
-      theme: data.theme === 'paper' ? 'paper' : 'night',
-    };
-  } catch (err) {
-    return { earned: [], counters: {}, spoiler: true, theme: 'night' };
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return blank();
+    const parsed = JSON.parse(raw);
+    return { ...blank(), ...parsed };
+  } catch {
+    return blank();
   }
 }
 
-export function saveProgress(state) {
-  localStorage.setItem(STORE_KEY, JSON.stringify({
-    earned: [...state.earned],
-    counters: state.counters,
-    spoiler: state.spoiler,
-    theme: state.theme,
-  }));
+function write(state) {
+  localStorage.setItem(KEY, JSON.stringify(state));
 }
 
-export function exportProgress(state) {
-  const blob = new Blob([JSON.stringify({
-    app: 'Leonida 55',
-    exportedAt: new Date().toISOString(),
-    earned: [...state.earned],
-    counters: state.counters,
-  }, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'leonida55-progress.json';
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-export async function importProgressFile(file, trophies) {
-  const text = await file.text();
-  const data = JSON.parse(text);
-  const names = new Set(trophies.map((t) => t.name));
-  const earned = (Array.isArray(data.earned) ? data.earned : []).filter((n) => names.has(n));
-  const counters = {};
-  if (data.counters && typeof data.counters === 'object') {
-    for (const t of trophies) {
-      if (t.target != null && Number.isFinite(Number(data.counters[t.id]))) {
-        counters[t.id] = Math.max(0, Math.min(Number(data.counters[t.id]), t.target));
-      }
-    }
-  }
-  return { earned, counters };
-}
-
-export function resetProgress() {
-  localStorage.removeItem(STORE_KEY);
-}
+export const store = {
+  state: read(),
+  save() { write(this.state); },
+  isEarned(id) { return this.state.earned.includes(id); },
+  toggleEarned(id) {
+    const i = this.state.earned.indexOf(id);
+    if (i >= 0) this.state.earned.splice(i, 1);
+    else this.state.earned.push(id);
+    this.save();
+  },
+  setEarned(id, on) {
+    const has = this.state.earned.includes(id);
+    if (on && !has) this.state.earned.push(id);
+    if (!on && has) this.state.earned.splice(this.state.earned.indexOf(id), 1);
+    this.save();
+  },
+  counter(id) { return this.state.counters[id] || 0; },
+  setCounter(id, value) {
+    this.state.counters[id] = Math.max(0, value | 0);
+    this.save();
+  },
+  note(id) { return this.state.notes[id] || ''; },
+  setNote(id, text) {
+    if (text) this.state.notes[id] = text;
+    else delete this.state.notes[id];
+    this.save();
+  },
+  exportFile() {
+    const blob = new Blob([JSON.stringify(this.state, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'leonida55-progress.json';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  },
+  async importFile(file) {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    this.state = { ...blank(), ...parsed };
+    this.save();
+  },
+};
