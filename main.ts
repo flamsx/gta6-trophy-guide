@@ -1,19 +1,17 @@
-// Leonida 55 — GTA VI Trophy Guide & Tracker (program/v1, Node 22, standard library only).
+// Leonida 55 v3 — gta6-trophy-guide-01 entry (Node 22, standard library only).
 // The guide is this directory's app/ folder: plain static files a browser opens at
-// app/index.html (ES modules, CSS, no build step), offline: it loads nothing over the
-// network, and its trophy list and guides are app/data/trophies.json. The program hands
-// it in: it copies app/ and screenshots/ from beside this file to /output and writes
-// /output/dossier.json, the summary the judge reads (your screenshots, the first load's
-// files and bytes, and your source), with the vendored make.fun library. Leave
+// app/index.html (one ES module, one stylesheet, no build step), offline — it loads
+// nothing over the network, and its trophy list and guides are app/data/trophies.json.
+// This program hands it in: it copies app/ and screenshots/ from beside this file to
+// /output and writes /output/dossier.json with the vendored make.fun library. Leave
 // vendor/makefun-frontend.ts as it is: the scorer requires dossier.json to be byte for
 // byte what its own copy writes.
 //
-// Before copying, this program validates its own data: the trophy file must hold all 55
-// official trophies, each with a non-blank guide, and the grade split must be the
-// official 1 platinum, 2 gold, 6 silver and 46 bronze. A bad data file fails loudly
-// here instead of shipping a broken guide.
+// Serve it locally with `node serve.ts`, then open http://localhost:8080.
+// Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
+//   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
-import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-frontend.ts';
@@ -21,42 +19,38 @@ import { buildDossier } from './vendor/makefun-frontend.ts';
 const here = fileURLToPath(new URL('.', import.meta.url));
 const out = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
-const trophiesPath = join(here, 'app', 'data', 'trophies.json');
-const doc = JSON.parse(readFileSync(trophiesPath, 'utf8'));
-const trophies = doc.trophies;
-if (!Array.isArray(trophies) || trophies.length !== 55) {
-  throw new Error(`trophies.json must hold 55 trophies, found ${Array.isArray(trophies) ? trophies.length : 'none'}`);
+// Validate the trophy data before handing it in: 55 trophies, every official name
+// present once, every guide non-blank and at least 200 characters, kinds adding up.
+const data = JSON.parse(readFileSync(join(here, 'app', 'data', 'trophies.json'), 'utf8'));
+const list = data.trophies;
+if (!Array.isArray(list) || list.length !== 55) throw new Error(`expected 55 trophies, got ${list?.length}`);
+const kinds = {};
+for (const t of list) {
+  if (!t.name || !t.description || !t.grade) throw new Error(`trophy ${t.id} is missing a field`);
+  if (typeof t.guide !== 'string' || t.guide.trim().length < 200) throw new Error(`trophy ${t.id} guide is too short`);
+  kinds[t.kind] = (kinds[t.kind] ?? 0) + 1;
 }
-const grades = { platinum: 0, gold: 0, silver: 0, bronze: 0 };
-for (const t of trophies) {
-  if (!t.name || typeof t.guide !== 'string' || !t.guide.trim()) {
-    throw new Error(`trophy ${t.id ?? '?'} has no name or a blank guide`);
-  }
-  if (!(t.grade in grades)) throw new Error(`trophy ${t.id} has unknown grade ${t.grade}`);
-  grades[t.grade]++;
+if (kinds.platinum !== 1 || kinds.story !== 17 || kinds.activities !== 30 || kinds.collectibles !== 7) {
+  throw new Error(`kind counts are wrong: ${JSON.stringify(kinds)}`);
 }
-if (grades.platinum !== 1 || grades.gold !== 2 || grades.silver !== 6 || grades.bronze !== 46) {
-  throw new Error(`grade split must be 1/2/6/46, found ${JSON.stringify(grades)}`);
-}
-
-// Screenshots: 3 or 4 images, each a whole JPEG or PNG of at most 256 KiB, as the gate
-// requires. The first by name is the cover, so the set must be complete before we ship.
-import { readdirSync, statSync } from 'node:fs';
-const shotsDir = join(here, 'screenshots');
-const shots = existsSync(shotsDir) ? readdirSync(shotsDir).filter((f) => !f.startsWith('.')) : [];
-if (shots.length < 3 || shots.length > 4) {
-  throw new Error(`screenshots/ must hold 3 or 4 images, found ${shots.length}`);
-}
-for (const f of shots) {
-  if (!/\.(jpe?g|png)$/i.test(f)) throw new Error(`screenshot ${f} is not a JPEG or PNG`);
-  const size = statSync(join(shotsDir, f)).size;
-  if (size > 262144) throw new Error(`screenshot ${f} is ${size} bytes, over the 256 KiB cap`);
+if (list.filter(t => t.hidden).length !== 28) throw new Error('expected 28 hidden trophies');
+if (list.filter(t => t.missable).length !== 1 || !list.find(t => t.id === 28)?.missable) {
+  throw new Error('only #28 Positive Mental Attitude may be flagged missable');
 }
 
 mkdirSync(out, { recursive: true });
 cpSync(join(here, 'app'), join(out, 'app'), { recursive: true });
 mkdirSync(join(out, 'screenshots'), { recursive: true });
 if (existsSync(join(here, 'screenshots'))) cpSync(join(here, 'screenshots'), join(out, 'screenshots'), { recursive: true });
+
+// Validate the screenshots before handing them in: 3 or 4 files, each a JPEG or PNG
+// of at most 256 KiB, named like the shots.json views that produced them.
+const shots = readdirSync(join(here, 'screenshots')).filter(f => !f.startsWith('.') && /\.(jpe?g|png)$/i.test(f));
+if (shots.length < 3 || shots.length > 4) throw new Error(`expected 3-4 screenshots, got ${shots.length}`);
+for (const f of shots) {
+  const size = statSync(join(here, 'screenshots', f)).size;
+  if (size > 262144) throw new Error(`screenshot ${f} is ${size} bytes, over the 256 KiB cap`);
+}
 
 // The scorer's own caps (reference/gate.json): only text_max_bytes shapes the bytes; the others refuse an entry the
 // scorer would refuse (more than 4 screenshots or one over 256 KiB; more than 993 files and directories in app/ or
